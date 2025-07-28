@@ -1,14 +1,19 @@
-const listeners = new Set<() => void>();
-export const onSubscriptionChange = (callback: () => void) => {
+type SubscriptionEvent = {
+  success: boolean;
+  error: Error | null;
+}
+
+const listeners = new Set<(event: SubscriptionEvent) => void>();
+export const onSubscriptionChange = (callback: (event: SubscriptionEvent) => void) => {
   listeners.add(callback);
   return () => listeners.delete(callback);
 };
 
 export const notifySubscriptionApplied = () => {
-  listeners.forEach(callback => callback());
+  listeners.forEach(callback => callback({success: true, error: null}));
 };
-export const notifySubscriptionError = () => {
-  listeners.forEach(callback => callback());
+export const notifySubscriptionError = (error: Error) => {
+  listeners.forEach(callback => callback({success: true, error: error}));
 };
 
 export const cleanupSubscriptionListener = () => {

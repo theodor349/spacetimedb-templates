@@ -8,11 +8,30 @@ class MessageStore {
   private cachedSnapshot: Message[] = [];
   private serverSnapshot: Message[] = [];
 
-  constructor() {
-    onSubscriptionChange(() => {
-      this.updateSnapshot();
-    });
+  private isInitialized = false;
+
+// Only invoked by the hook
+  public setClient(client: DbConnection) {
+    if (!this.connection || this.connection !== client) {
+      this.connection = client;
+      this.subscribeToTables(client);
+      this.loadInitialSnapshot(client);
+      this.isInitialized = true;
+    }
   }
+
+  private subscribeToTables(client: DbConnection) {
+    client.db.message.onInsert((ctx, row) => this.updateSnapshot());
+    client.db.message.onDelete((ctx, row) => this.updateSnapshot());
+  }
+
+  private loadInitialSnapshot(client: DbConnection) {
+    if (this.connection) {
+      this.cachedSnapshot = Array.from(this.connection.db.message.iter());
+      this.emitChange();
+    }
+  }
+
 
   public subscribe(onStoreChange: () => void) {
     this.listeners.add(onStoreChange);
@@ -24,12 +43,10 @@ class MessageStore {
 
   public getSnapshot() {
     try {
-      this.getConnection();
       return this.cachedSnapshot;
     } catch (error) {
       const isNotSSR = typeof window !== 'undefined';
       if(isNotSSR) {
-        // This would be an unexpected error on the client-side
         console.error('Unexpected error while obtaining snapshot:', error);
       }
       return this.serverSnapshot;
@@ -45,15 +62,6 @@ class MessageStore {
     if (this.connection) {
       this.connection.reducers.sendMessage(newMessage);
     }
-  }
-
-  private getConnection(): DbConnection {
-    if (!this.connection) {
-      this.connection = getDbConnection();
-      this.connection.db.message.onInsert((ctx, row) => this.updateSnapshot());
-      this.connection.db.message.onDelete((ctx, row) => this.updateSnapshot());
-    }
-    return this.connection;
   }
 
   private updateSnapshot() {

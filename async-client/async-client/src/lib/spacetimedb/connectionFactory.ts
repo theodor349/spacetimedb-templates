@@ -14,8 +14,9 @@ import {
 } from "@/lib/spacetimedb/subscriptionEvents";
 
 let singletonConnection: DbConnection | null = null;
+let connectionPromise: Promise<DbConnection> | null = null;
 
-export const getDbConnection = (): DbConnection => {
+export const getDbConnection = async (): Promise<DbConnection> => {
   const isSSR = typeof window === 'undefined';
   if (isSSR) {
     throw new Error('Cannot use SpacetimeDB on the server.');
@@ -25,23 +26,32 @@ export const getDbConnection = (): DbConnection => {
     return singletonConnection;
   }
 
-  singletonConnection = buildDbConnection()
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  connectionPromise = buildDbConnection();
+  singletonConnection = await connectionPromise;
+  connectionPromise = null;
+
   return singletonConnection;
 };
 
-const buildDbConnection = () => {
+const buildDbConnection = async () => {
   console.log('[SpacetimeDB] Building connection...');
   return DbConnection.builder()
   .withUri('ws://localhost:3000')
   .withModuleName('quickstart-chat')
-  .withToken(getAuthToken())
+  .withToken(await getAuthToken())
   .onConnect(onConnect)
   .onDisconnect(onDisconnect)
   .onConnectError(onConnectError)
   .build();
 }
 
-const getAuthToken = () => {
+const getAuthToken = async () => {
+  // Simulate obtaining of token
+  await new Promise(resolve => setTimeout(resolve, 2000));
   return "";
 }
 
