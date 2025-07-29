@@ -5,10 +5,10 @@ import { DbConnection } from '@/module_bindings';
 import { getDbConnection, disconnectDbConnection } from '@/lib/spacetimedb/connectionFactory';
 import { SpacetimeDBLoadingScreen } from '@/components/connection/loading';
 import {SpacetimeDBErrorScreen} from "@/components/connection/error";
-import {onSubscriptionChange} from "@/lib/spacetimedb/subscriptionEvents";
+import {onSubscriptionApplied, onSubscriptionError} from "@/lib/spacetimedb/subscriptionEvents";
 import {DataPreloader} from "@/contexts/spacetimeDB/dataPreloader";
 import { InitStatusContext, SpacetimeDBContext } from './spacetimeDBContexts';
-import {onConnectionChange} from "@/lib/spacetimedb/connectionEvents";
+import { onConnectionDisconnected, onConnectionError} from "@/lib/spacetimedb/connectionEvents";
 
 type SpacetimeDBProviderProps = {
   children: ReactNode;
@@ -39,43 +39,29 @@ export function SpacetimeDBProvider({ children }: SpacetimeDBProviderProps) {
       }
     };
 
-  onConnectionChange((event) => {
-    if(!isMounted) return;
-
-    switch (event.type) {
-      case 'established':
-        break;
-      case 'disconnected':
-        setClient(null);
-        setIsLoading(false);
-        setError(new Error('Disconnected from SpacetimeDB.'));
-        break;
-      case 'error':
-        setClient(null);
-        setIsLoading(false);
-        setError(event.error);
-        break;
-      default:
-        // Should not happen if all cases are covered, but good for robustness
-        console.warn('[SpacetimeDB] Unknown connection event type:', event);
-        break;
-    }
-  })
-
-    onSubscriptionChange((event) => {
+    onConnectionDisconnected(() => {
       if(!isMounted) return;
-
-      if(!event.success){
-        if(error){
-          console.error('[SpacetimeDB] Subscription failed.', event.error);
-          setError(new Error('Multiple errors occurred. Please check the console for details.'));
-        }
-        else
-          setError(event.error);
-      }
-
+      setClient(null);
       setIsLoading(false);
+      setError(new Error('Disconnected from SpacetimeDB.'));
     });
+    onConnectionError((error) => {
+      if(!isMounted) return;
+      setClient(null);
+      setIsLoading(false);
+      setError(error);
+    })
+
+    onSubscriptionApplied(() => {
+      if(!isMounted) return;
+      setIsLoading(false);
+    })
+    onSubscriptionError((error) => {
+      if(!isMounted) return;
+      setIsLoading(false);
+      setError(error);
+    })
+
     initializeClient();
 
     return () => {

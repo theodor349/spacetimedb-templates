@@ -1,37 +1,34 @@
-type ConnectionEstablishedEvent = {
-  type: 'established';
+const connectionEstablishListeners = new Set<() => void>();
+const connectionDisconnectedListeners = new Set<() => void>();
+const connectionErrorListeners = new Set<(error: Error) => void>();
+
+
+export const onConnectionEstablished = (callback: () => void) => {
+  connectionEstablishListeners.add(callback);
+  return () => connectionEstablishListeners.delete(callback);
+};
+export const onConnectionDisconnected = (callback: () => void) => {
+  connectionDisconnectedListeners.add(callback);
+  return () => connectionDisconnectedListeners.delete(callback);
+};
+export const onConnectionError = (callback: (error: Error) => void) => {
+  connectionErrorListeners.add(callback);
+  return () => connectionErrorListeners.delete(callback);
 };
 
-type ConnectionDisconnectedEvent = {
-  type: 'disconnected';
-};
-
-type ConnectionErrorEvent = {
-  type: 'error';
-  error: Error;
-};
-
-type ConnectionEvent =
-  | ConnectionEstablishedEvent
-  | ConnectionDisconnectedEvent
-  | ConnectionErrorEvent;
-
-const listeners = new Set<(event: ConnectionEvent) => void>();
-export const onConnectionChange = (callback: (event: ConnectionEvent) => void) => {
-  listeners.add(callback);
-  return () => listeners.delete(callback);
-};
 
 export const notifyConnectionEstablished = () => {
-  listeners.forEach(callback => callback({ type: 'established' }));
+  connectionEstablishListeners.forEach(callback => callback());
 };
 export const notifyConnectionDisconnected = () => {
-  listeners.forEach(callback => callback({ type: 'disconnected' }));
+  connectionDisconnectedListeners.forEach(callback => callback());
 };
 export const notifyConnectionError = (error: Error) => {
-  listeners.forEach(callback => callback({ type: 'error', error }));
+  connectionErrorListeners.forEach(callback => callback(error));
 };
 
 export const cleanupConnectionListener = () => {
-  listeners.clear();
+  connectionEstablishListeners.clear();
+  connectionDisconnectedListeners.clear();
+  connectionErrorListeners.clear();
 }
