@@ -1,6 +1,4 @@
 import {Message, DbConnection} from "@/module_bindings";
-import {getDbConnection} from '@/lib/spacetimedb/connectionFactory';
-import {onSubscriptionChange} from "@/lib/spacetimedb/subscriptionEvents";
 
 class MessageStore {
   private listeners: Set<() => void> = new Set();
@@ -26,10 +24,8 @@ class MessageStore {
   }
 
   private loadInitialSnapshot(client: DbConnection) {
-    if (this.connection) {
-      this.cachedSnapshot = Array.from(this.connection.db.message.iter());
-      this.emitChange();
-    }
+    this.cachedSnapshot = Array.from(client.db.message.iter());
+    this.emitChange();
   }
 
 
