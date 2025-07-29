@@ -8,6 +8,7 @@ import {SpacetimeDBErrorScreen} from "@/components/connection/error";
 import {onSubscriptionChange} from "@/lib/spacetimedb/subscriptionEvents";
 import {DataPreloader} from "@/contexts/spacetimeDB/dataPreloader";
 import { InitStatusContext, SpacetimeDBContext } from './spacetimeDBContexts';
+import {onConnectionChange} from "@/lib/spacetimedb/connectionEvents";
 
 type SpacetimeDBProviderProps = {
   children: ReactNode;
@@ -38,12 +39,35 @@ export function SpacetimeDBProvider({ children }: SpacetimeDBProviderProps) {
       }
     };
 
+  onConnectionChange((event) => {
+    if(!isMounted) return;
+
+    switch (event.type) {
+      case 'established':
+        break;
+      case 'disconnected':
+        setClient(null);
+        setIsLoading(false);
+        setError(new Error('Disconnected from SpacetimeDB.'));
+        break;
+      case 'error':
+        setClient(null);
+        setIsLoading(false);
+        setError(event.error);
+        break;
+      default:
+        // Should not happen if all cases are covered, but good for robustness
+        console.warn('[SpacetimeDB] Unknown connection event type:', event);
+        break;
+    }
+  })
+
     onSubscriptionChange((event) => {
       if(!isMounted) return;
 
       if(!event.success){
         if(error){
-          console.error('[SpacetimeDB] Supscription failed.', event.error);
+          console.error('[SpacetimeDB] Subscription failed.', event.error);
           setError(new Error('Multiple errors occurred. Please check the console for details.'));
         }
         else

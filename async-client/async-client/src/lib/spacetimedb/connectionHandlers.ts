@@ -37,7 +37,7 @@ export const onDisconnect = () => {
 
 export const onConnectError = (ctx: ErrorContext, error: Error) => {
   console.error('[SpacetimeDB] Connection Error:', error);
-  notifyConnectionError();
+  notifyConnectionError(error);
 };
 
 export const subscribeToQueries = (conn: DbConnection, queries: string[]) => {
