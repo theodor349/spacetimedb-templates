@@ -39,6 +39,8 @@ export function SpacetimeDBProvider({ children }: SpacetimeDBProviderProps) {
     };
 
     onSubscriptionChange((event) => {
+      if(!isMounted) return;
+
       if(!event.success){
         if(error){
           console.error('[SpacetimeDB] Supscription failed.', event.error);
