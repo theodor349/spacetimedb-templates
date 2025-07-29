@@ -6,7 +6,7 @@ import { getDbConnection, disconnectDbConnection } from '@/lib/spacetimedb/conne
 import { SpacetimeDBLoadingScreen } from '@/components/connection/loading';
 import {SpacetimeDBErrorScreen} from "@/components/connection/error";
 import {onSubscriptionChange} from "@/lib/spacetimedb/subscriptionEvents";
-import {DataPreloader} from "@/contexts/dataPreloader";
+import {DataPreloader} from "@/contexts/spacetimeDB/dataPreloader";
 import { InitStatusContext, SpacetimeDBContext } from './spacetimeDBContexts';
 
 type SpacetimeDBProviderProps = {
