@@ -1,28 +1,34 @@
-import {Identity} from "@clockworklabs/spacetimedb-sdk";
+const connectionEstablishListeners = new Set<() => void>();
+const connectionDisconnectedListeners = new Set<() => void>();
+const connectionErrorListeners = new Set<(error: Error) => void>();
 
-export const connectionStatus = {
-  isConnected: false,
-  isSubscribed: false,
-  error: null as Error | null,
-  identity: null as Identity | null,
+
+export const onConnectionEstablished = (callback: () => void) => {
+  connectionEstablishListeners.add(callback);
+  return () => connectionEstablishListeners.delete(callback);
+};
+export const onConnectionDisconnected = (callback: () => void) => {
+  connectionDisconnectedListeners.add(callback);
+  return () => connectionDisconnectedListeners.delete(callback);
+};
+export const onConnectionError = (callback: (error: Error) => void) => {
+  connectionErrorListeners.add(callback);
+  return () => connectionErrorListeners.delete(callback);
 };
 
-const listeners = new Set<() => void>();
-export const onConnectionChange = (callback: () => void) => {
-  listeners.add(callback);
-  return () => listeners.delete(callback);
-};
 
 export const notifyConnectionEstablished = () => {
-  listeners.forEach(callback => callback());
+  connectionEstablishListeners.forEach(callback => callback());
 };
 export const notifyConnectionDisconnected = () => {
-  listeners.forEach(callback => callback());
+  connectionDisconnectedListeners.forEach(callback => callback());
 };
-export const notifyConnectionError = () => {
-  listeners.forEach(callback => callback());
+export const notifyConnectionError = (error: Error) => {
+  connectionErrorListeners.forEach(callback => callback(error));
 };
 
 export const cleanupConnectionListener = () => {
-  listeners.clear();
+  connectionEstablishListeners.clear();
+  connectionDisconnectedListeners.clear();
+  connectionErrorListeners.clear();
 }
